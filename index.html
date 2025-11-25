@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI简历分析系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50, #3498db);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            padding: 30px;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .upload-section, .analysis-section {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            border: 2px dashed #dee2e6;
+        }
+
+        .section-title {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+
+        .file-upload {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .file-input {
+            width: 100%;
+            padding: 15px;
+            border: 2px dashed #3498db;
+            border-radius: 8px;
+            background: #ecf0f1;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .file-input:hover {
+            background: #d6eaf8;
+            border-color: #2980b9;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: all 0.3s ease;
+            margin: 5px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .textarea {
+            width: 100%;
+            height: 150px;
+            padding: 15px;
+            border: 2px solid #bdc3c7;
+            border-radius: 8px;
+            resize: vertical;
+            font-family: inherit;
+        }
+
+        .textarea:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        .results {
+            margin-top: 20px;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+        }
+
+        .score-display {
+            text-align: center;
+            padding: 20px;
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+            color: white;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .score-value {
+            font-size: 3em;
+            font-weight: bold;
+        }
+
+        .skill-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 10px 0;
+        }
+
+        .skill-tag {
+            background: #3498db;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+        }
+
+        .skill-tag.missing {
+            background: #e74c3c;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 2s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .recommendation {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 AI简历分析系统</h1>
+            <p>智能解析简历，精准匹配岗位需求</p>
+        </div>
+
+        <div class="main-content">
+            <div class="upload-section">
+                <h2 class="section-title">📄 简历上传</h2>
+                <div class="file-upload">
+                    <input type="file" id="resumeFile" accept=".pdf" class="file-input">
+                </div>
+                <button onclick="uploadResume()" class="btn" id="uploadBtn">上传并解析简历</button>
+
+                <div id="uploadResult" class="results" style="display: none;">
+                    <h3>解析结果</h3>
+                    <div id="parsedInfo"></div>
+                </div>
+            </div>
+
+            <div class="analysis-section">
+                <h2 class="section-title">🎯 岗位匹配分析</h2>
+                <textarea id="jobDescription" class="textarea" placeholder="请输入岗位描述和要求..."></textarea>
+                <button onclick="analyzeMatch()" class="btn" id="analyzeBtn">分析匹配度</button>
+
+                <div id="analysisResult" class="results" style="display: none;">
+                    <div class="score-display">
+                        <div>匹配度评分</div>
+                        <div class="score-value" id="matchScore">0%</div>
+                    </div>
+
+                    <h4>技能匹配</h4>
+                    <div id="skillMatch"></div>
+
+                    <h4>经验匹配</h4>
+                    <div id="experienceMatch"></div>
+
+                    <h4>改进建议</h4>
+                    <div id="recommendations"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'https://your-api-gateway-endpoint.com'; // 替换为实际API网关地址
+
+        async function uploadResume() {
+            const fileInput = document.getElementById('resumeFile');
+            const uploadBtn = document.getElementById('uploadBtn');
+            const resultDiv = document.getElementById('uploadResult');
+            const parsedInfoDiv = document.getElementById('parsedInfo');
+
+            if (!fileInput.files[0]) {
+                alert('请选择PDF文件');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+
+            uploadBtn.disabled = true;
+            uploadBtn.textContent = '解析中...';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    displayParsedInfo(result);
+                    resultDiv.style.display = 'block';
+                } else {
+                    alert('解析失败: ' + result.error);
+                }
+            } catch (error) {
+                alert('上传失败: ' + error.message);
+            } finally {
+                uploadBtn.disabled = false;
+                uploadBtn.textContent = '上传并解析简历';
+            }
+        }
+
+        function displayParsedInfo(data) {
+            const info = data.extracted_info;
+            let html = '';
+
+            // 基本信息
+            if (info.basic_info) {
+                html += '<h4>基本信息</h4>';
+                html += '<div class="info-item">';
+                for (const [key, value] of Object.entries(info.basic_info)) {
+                    html += `<p><strong>${key}:</strong> ${value}</p>`;
+                }
+                html += '</div>';
+            }
+
+            // 技能
+            if (info.skills && info.skills.length > 0) {
+                html += '<h4>技能</h4>';
+                html += '<div class="skill-list">';
+                info.skills.forEach(skill => {
+                    html += `<span class="skill-tag">${skill}</span>`;
+                });
+                html += '</div>';
+            }
+
+            // 工作经历
+            if (info.experience && info.experience.length > 0) {
+                html += '<h4>工作经历</h4>';
+                info.experience.forEach(exp => {
+                    html += '<div class="experience-item">';
+                    for (const [key, value] of Object.entries(exp)) {
+                        html += `<p><strong>${key}:</strong> ${value}</p>`;
+                    }
+                    html += '</div>';
+                });
+            }
+
+            document.getElementById('parsedInfo').innerHTML = html;
+        }
+
+        async function analyzeMatch() {
+            const jobDesc = document.getElementById('jobDescription').value;
+            const analyzeBtn = document.getElementById('analyzeBtn');
+            const resultDiv = document.getElementById('analysisResult');
+
+            if (!jobDesc.trim()) {
+                alert('请输入岗位描述');
+                return;
+            }
+
+            // 获取解析后的简历文本（这里简化处理，实际应从上传结果获取）
+            const resumeText = document.getElementById('parsedInfo').textContent || '';
+
+            if (!resumeText) {
+                alert('请先上传并解析简历');
+                return;
+            }
+
+            analyzeBtn.disabled = true;
+            analyzeBtn.textContent = '分析中...';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/analyze`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        resume_text: resumeText,
+                        job_description: jobDesc
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    displayAnalysisResult(result.match_analysis);
+                    resultDiv.style.display = 'block';
+                } else {
+                    alert('分析失败: ' + result.error);
+                }
+            } catch (error) {
+                alert('分析失败: ' + error.message);
+            } finally {
+                analyzeBtn.disabled = false;
+                analyzeBtn.textContent = '分析匹配度';
+            }
+        }
+
+        function displayAnalysisResult(analysis) {
+            // 显示总体评分
+            document.getElementById('matchScore').textContent = analysis.overall_score + '%';
+
+            // 显示技能匹配
+            const skillMatchDiv = document.getElementById('skillMatch');
+            let skillHtml = '';
+
+            skillHtml += `<p>匹配率: ${analysis.skill_match.match_rate}%</p>`;
+
+            if (analysis.skill_match.matched_skills.length > 0) {
+                skillHtml += '<p>匹配技能:</p><div class="skill-list">';
+                analysis.skill_match.matched_skills.forEach(skill => {
+                    skillHtml += `<span class="skill-tag">${skill}</span>`;
+                });
+                skillHtml += '</div>';
+            }
+
+            if (analysis.skill_match.missing_skills.length > 0) {
+                skillHtml += '<p>缺失技能:</p><div class="skill-list">';
+                analysis.skill_match.missing_skills.forEach(skill => {
+                    skillHtml += `<span class="skill-tag missing">${skill}</span>`;
+                });
+                skillHtml += '</div>';
+            }
+
+            skillMatchDiv.innerHTML = skillHtml;
+
+            // 显示经验匹配
+            const expMatchDiv = document.getElementById('experienceMatch');
+            expMatchDiv.innerHTML = `
+                <p>简历经验: ${analysis.experience_match.resume_experience_years} 年</p>
+                <p>要求经验: ${analysis.experience_match.required_experience_years} 年</p>
+                <p>经验匹配度: ${analysis.experience_match.experience_match_score}%</p>
+            `;
+
+            // 显示建议
+            const recDiv = document.getElementById('recommendations');
+            let recHtml = '';
+            analysis.recommendations.forEach(rec => {
+                recHtml += `<div class="recommendation">${rec}</div>`;
+            });
+            recDiv.innerHTML = recHtml;
+        }
+    </script>
+</body>
+</html>
